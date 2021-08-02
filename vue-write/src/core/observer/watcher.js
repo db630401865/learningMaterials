@@ -47,12 +47,13 @@ export default class Watcher {
     expOrFn: string | Function,//Watcher有3中，一种是updateComponent这种渲染watcher,一种是计算属性watcher,一种是监听watcher
     cb: Function,
     options?: ?Object,
-    isRenderWatcher?: boolean
+    isRenderWatcher?: boolean //是否是渲染watcher
   ) {
     this.vm = vm
     if (isRenderWatcher) {
       vm._watcher = this
     }
+    //_watchers这里面存储了所有watcher。3中都有
     vm._watchers.push(this)
     // options
     if (options) {
@@ -61,13 +62,14 @@ export default class Watcher {
       //是否延迟更新视图，首次渲染就是false，计算属性就是true
       this.lazy = !!options.lazy 
       this.sync = !!options.sync
+      //before就是传入的函数，触发生命周期的钩子函数
       this.before = options.before
     } else {
       this.deep = this.user = this.lazy = this.sync = false
     }
     this.cb = cb
-    this.id = ++uid // uid for batching
-    this.active = true
+    this.id = ++uid // uid for batching 。唯一标示的watcher
+    this.active = true //当前watcher是否是活动的watcher
     this.dirty = this.lazy // for lazy watchers
     this.deps = []
     this.newDeps = []
@@ -78,10 +80,12 @@ export default class Watcher {
       : ''
     // parse expression for getter
     if (typeof expOrFn === 'function') {
-      this.getter = expOrFn
+      this.getter = expOrFn //expOrFn 渲染时候是updateComponent
     } else {
-      // expOrFn 是字符串的时候，例如 watch: { 'person.name': function... }
+      // expOrFn 是字符串的时候，是监听器 例如 watch: { 'person.name': function... }
       // parsePath('person.name') 返回一个函数获取 person.name 的值
+      // parsePath生成一个函数，帮我们获取属性的值
+      // this.getter是个函数
       this.getter = parsePath(expOrFn)
       if (!this.getter) {
         this.getter = noop
@@ -93,6 +97,7 @@ export default class Watcher {
         )
       }
     }
+    //lazy在计算属性才是true
     this.value = this.lazy
       ? undefined
       : this.get()
@@ -104,10 +109,10 @@ export default class Watcher {
   get () {
     //pushTarget是为了将父组件保存起来：每一个组件都会对应一个watcher，如果组件有嵌套，他会先渲染内部组件，所以先要把对应的父组件保存起来
     pushTarget(this)
-    let value
+    let value 
     const vm = this.vm
     try {
-      value = this.getter.call(vm, vm)
+      value = this.getter.call(vm, vm) // getter渲染时候是updateComponent
     } catch (e) {
       if (this.user) {
         handleError(e, vm, `getter for watcher "${this.expression}"`)
@@ -117,6 +122,7 @@ export default class Watcher {
     } finally {
       // "touch" every property so they are all tracked as
       // dependencies for deep watching
+      //deep当我们监听的是对象的话，它会监听对象下的所有子属性
       if (this.deep) {
         traverse(value)
       }
@@ -132,6 +138,7 @@ export default class Watcher {
   addDep (dep: Dep) {
     const id = dep.id
     if (!this.newDepIds.has(id)) {
+      //如果没有id，就存在newDepIds这个集合中
       this.newDepIds.add(id)
       this.newDeps.push(dep)
       if (!this.depIds.has(id)) {
@@ -172,6 +179,7 @@ export default class Watcher {
     } else if (this.sync) {
       this.run()
     } else {
+      //queueWatcher就是把当前Watcher当到队列里面
       queueWatcher(this)
     }
   }
@@ -180,8 +188,11 @@ export default class Watcher {
    * Scheduler job interface.
    * Will be called by the scheduler.
    */
-  run () {
+   run () {
+    //是否是存活状态
     if (this.active) {
+      //对应渲染函数this.get()是没有值的。所有返回的是undefined.如果是用户watcher它会继续往后执行
+      //如果是渲染函数的话，就调用updateComponent这个方法
       const value = this.get()
       if (
         value !== this.value ||
@@ -194,13 +205,15 @@ export default class Watcher {
         // set new value
         const oldValue = this.value
         this.value = value
+        //判断是否是用户watcher
         if (this.user) {
-          try {
+          try { 
             this.cb.call(this.vm, value, oldValue)
           } catch (e) {
             handleError(e, this.vm, `callback for watcher "${this.expression}"`)
           }
         } else {
+          //渲染watcher，cp是空函数
           this.cb.call(this.vm, value, oldValue)
         }
       }

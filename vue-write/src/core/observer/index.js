@@ -16,6 +16,7 @@ import {
   isServerRendering
 } from '../util/index'
 
+//获取arrayMethods特有的成员，获取新增的push等修补的方法的名字，返回的是数组
 const arrayKeys = Object.getOwnPropertyNames(arrayMethods)
 
 /**
@@ -56,12 +57,16 @@ export class Observer {
     def(value, '__ob__', this) // def就是对object.dfineporpty()做了封装
     // 数组的响应式处理
     if (Array.isArray(value)) {
+      //hasProto判断当前浏览器是否支持原型这个属性（用于处理兼容问题）
+      //protoAugment，protoAugment其实就是修补会改变数组的方法
       if (hasProto) {
+        //value.__proto__ = arrayMethods 。arrayMethods就是数组里面的各种方法。因为修补了之后就变成响应式的方法了
+        //当这些方法别调用的时候，会直接调用dep.notify().然后通知watcher。之后由watcher更新视图
         protoAugment(value, arrayMethods)
       } else {
-        copyAugment(value, arrayMethods, arrayKeys)
+        copyAugment(value, arrayMethods,  arrayKeys)
       }
-      // 为数组中的每一个对象创建一个 observer 实例
+      // 为数组中的每一个对象创建一个 observer 实例。如果是对象的话给他转换成响应式对象
       this.observeArray(value)
     } else {
       // 遍历对象中的每一个属性，转换成 setter/getter
@@ -111,6 +116,7 @@ function protoAugment (target, src: Object) {
  * hidden properties.
  */
 /* istanbul ignore next */
+//将修补过后的方法，重新赋值到原型上去
 function copyAugment (target: Object, src: Object, keys: Array<string>) {
   for (let i = 0, l = keys.length; i < l; i++) {
     const key = keys[i]
@@ -192,9 +198,11 @@ export function defineReactive (
       const value = getter ? getter.call(obj) : val
       // 如果存在当前依赖目标，即 watcher 对象，则建立依赖
       if (Dep.target) {
+        //depend()就是进行依赖收集，首先会讲dep对象添加到watcher对象的集合中，并且将watcher对象添加到subs数组中
         dep.depend()
         // 如果子观察目标存在，建立子对象的依赖关系
         if (childOb) {
+          //为当前自对象收集依赖。给自己对象添加依赖，当自对象添加或者删除的操作时候我们就可以下方通知
           childOb.dep.depend()
           // 如果属性是数组，则特殊处理收集数组对象依赖
           if (Array.isArray(value)) {
@@ -329,6 +337,7 @@ export function del (target: Array<any> | Object, key: any) {
 function dependArray (value: Array<any>) {
   for (let e, i = 0, l = value.length; i < l; i++) {
     e = value[i]
+    //判断数组中是否有对象，如果有对象的话也需要收集依赖
     e && e.__ob__ && e.__ob__.dep.depend()
     if (Array.isArray(e)) {
       dependArray(e)
