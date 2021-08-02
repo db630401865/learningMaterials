@@ -19,9 +19,11 @@ export function isReserved (str: string): boolean {
  * Define a property.
  */
 export function def (obj: Object, key: string, val: any, enumerable?: boolean) {
+  //key传入过来的__ob__，
   Object.defineProperty(obj, key, {
     value: val,
-    enumerable: !!enumerable,
+    // !enumerable是对undefined去反，所以是true，!!enumerable就是false。也就是当前设置的ob是不可枚举的，ob是用来记录对象的，不需要遍历设置get,set。
+    enumerable: !!enumerable, 
     writable: true,
     configurable: true
   })

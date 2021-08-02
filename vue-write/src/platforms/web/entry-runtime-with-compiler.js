@@ -32,6 +32,7 @@ Vue.prototype.$mount = function (
     return this
   }
 
+  //获取vue实例上options选项
   const options = this.$options
   // resolve template/el and convert to render function
   // 把 template/el 转换成 render 函数
@@ -52,6 +53,7 @@ Vue.prototype.$mount = function (
             )
           }
         }
+        //如果有nodeType存在就是dom元素
       } else if (template.nodeType) {
         // 如果模板是元素，返回元素的 innerHTML
         template = template.innerHTML
@@ -66,7 +68,7 @@ Vue.prototype.$mount = function (
       // 如果没有 template，获取el的 outerHTML 作为模板
       template = getOuterHTML(el)
     }
-    if (template) {
+    if (template) { 
       /* istanbul ignore if */
       if (process.env.NODE_ENV !== 'production' && config.performance && mark) {
         mark('compile')

@@ -157,6 +157,7 @@ export function mountComponent (
       /* istanbul ignore if */
       if ((vm.$options.template && vm.$options.template.charAt(0) !== '#') ||
         vm.$options.el || el) {
+          //警告我们是开发环境，运行时的环境是编译器是无效的。应该传入render函数，或者使用编译器版本
         warn(
           'You are using the runtime-only build of Vue where the template ' +
           'compiler is not available. Either pre-compile the templates into ' +
@@ -173,9 +174,11 @@ export function mountComponent (
   }
   callHook(vm, 'beforeMount')
 
+  //更新组件，挂载
   let updateComponent
   /* istanbul ignore if */
   if (process.env.NODE_ENV !== 'production' && config.performance && mark) {
+    //下面是性能监测代码
     updateComponent = () => {
       const name = vm._name
       const id = vm._uid
@@ -193,7 +196,10 @@ export function mountComponent (
       measure(`vue ${name} patch`, startTag, endTag)
     }
   } else {
+    //_render()是调用用户传入的render()，或者编译器生成的render 
     updateComponent = () => {
+      //最终返回虚拟dom，将虚拟dom传入到_update方法
+      //_update()内部就是帮我们把虚拟dom转换为真实dom,最后更新到界面上
       vm._update(vm._render(), hydrating)
     }
   }
@@ -201,6 +207,7 @@ export function mountComponent (
   // we set this to vm._watcher inside the watcher's constructor
   // since the watcher's initial patch may call $forceUpdate (e.g. inside child
   // component's mounted hook), which relies on vm._watcher being already defined
+  //updateComponent在此调用
   new Watcher(vm, updateComponent, noop, {
     before () {
       if (vm._isMounted && !vm._isDestroyed) {
@@ -212,6 +219,7 @@ export function mountComponent (
 
   // manually mounted instance, call mounted on self
   // mounted is called for render-created child components in its inserted hook
+  // 页面挂载完毕
   if (vm.$vnode == null) {
     vm._isMounted = true
     callHook(vm, 'mounted')

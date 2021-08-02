@@ -167,6 +167,8 @@ function initData (vm: Component) {
   // observe data
   // 响应式处理
   // 将data转换为响应式对象
+  // data就是options里面的data
+  // asRootData是根数据，做简单的处理
   observe(data, true /* asRootData */)
 }
 

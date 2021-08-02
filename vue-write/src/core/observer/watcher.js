@@ -44,7 +44,7 @@ export default class Watcher {
 
   constructor (
     vm: Component,
-    expOrFn: string | Function,
+    expOrFn: string | Function,//Watcher有3中，一种是updateComponent这种渲染watcher,一种是计算属性watcher,一种是监听watcher
     cb: Function,
     options?: ?Object,
     isRenderWatcher?: boolean
@@ -58,7 +58,8 @@ export default class Watcher {
     if (options) {
       this.deep = !!options.deep
       this.user = !!options.user
-      this.lazy = !!options.lazy
+      //是否延迟更新视图，首次渲染就是false，计算属性就是true
+      this.lazy = !!options.lazy 
       this.sync = !!options.sync
       this.before = options.before
     } else {
@@ -101,6 +102,7 @@ export default class Watcher {
    * Evaluate the getter, and re-collect dependencies.
    */
   get () {
+    //pushTarget是为了将父组件保存起来：每一个组件都会对应一个watcher，如果组件有嵌套，他会先渲染内部组件，所以先要把对应的父组件保存起来
     pushTarget(this)
     let value
     const vm = this.vm
