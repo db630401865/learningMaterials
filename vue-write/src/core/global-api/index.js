@@ -51,7 +51,7 @@ export function initGlobalAPI (Vue: GlobalAPI) {
 
   // 2.6 explicit observable API
   // 让一个对象可响应。设置响应式的数据
-  Vue.observable = <>(obj: T): T => {
+  Vue.observable = <T>(obj: T): T => {
     observe(obj)
     return obj
   }

@@ -250,26 +250,28 @@ export function defineReactive (
  * triggers change notification if the property doesn't
  * already exist.
  */
-export function set (target: Array<any> | Object, key: any, val: any): any {
+export function  set (target: Array<any> | Object, key: any, val: any): any {
   if (process.env.NODE_ENV !== 'production' &&
     (isUndef(target) || isPrimitive(target))
   ) {
     warn(`Cannot set reactive property on undefined, null, or primitive value: ${(target: any)}`)
   }
-  // 判断 target 是否是对象，key 是否是合法的索引
+  // 判断 target 是否是对象，key 是否是合法的索引。处理数组
   if (Array.isArray(target) && isValidArrayIndex(key)) {
     target.length = Math.max(target.length, key)
     // 通过 splice 对key位置的元素进行替换
     // splice 在 array.js 进行了响应化的处理
+    // splice中会调用ob.中的dep.notify方法，去更新视图
     target.splice(key, 1, val)
     return val
   }
-  // 如果 key 在对象中已经存在直接赋值
+  // 如果 key 在对象中已经存在直接赋值。处理对象
   if (key in target && !(key in Object.prototype)) {
     target[key] = val
     return val
   }
   // 获取 target 中的 observer 对象
+  // __ob__中存储的就是响应式对象
   const ob = (target: any).__ob__
   // 如果 target 是 vue 实例或者 $data 直接返回
   if (target._isVue || (ob && ob.vmCount)) {
@@ -300,16 +302,17 @@ export function del (target: Array<any> | Object, key: any) {
   ) {
     warn(`Cannot delete reactive property on undefined, null, or primitive value: ${(target: any)}`)
   }
-  // 判断是否是数组，以及 key 是否合法
+  // 判断是否是数组，以及 key 是否合法 。这是数组操作
   if (Array.isArray(target) && isValidArrayIndex(key)) {
     // 如果是数组通过 splice 删除
     // splice 做过响应式处理
+    // splice中会调用ob.中的dep.notify方法，去更新视图
     target.splice(key, 1)
     return
   }
-  // 获取 target 的 ob 对象
+  // 获取 target 的 ob 对象。这下面代码是对象操作
   const ob = (target: any).__ob__
-  // target 如果是 Vue 实例或者 $data 对象，直接返回
+  // target 如果是 Vue 实例或者 $data 对象，直接返回  
   if (target._isVue || (ob && ob.vmCount)) {
     process.env.NODE_ENV !== 'production' && warn(
       'Avoid deleting properties on a Vue instance or its root $data ' +
@@ -317,12 +320,14 @@ export function del (target: Array<any> | Object, key: any) {
     )
     return
   }
-  // 如果 target 对象没有 key 属性直接返回
+  // 如果 target 对象没有 key 属性直接返回 
+  // 判断key属性是否是直接属于target，而不继承来的。如果是继承来的直接返回
   if (!hasOwn(target, key)) {
     return
   }
   // 删除属性
   delete target[key]
+  // 判断是否有ob对象，是否是响应式的，如果不是直接返回。
   if (!ob) {
     return
   }

@@ -97,7 +97,7 @@ export default class Watcher {
         )
       }
     }
-    //lazy在计算属性才是true
+    //lazy在计算属性才是true。在计算属性中，我们把计算属性对应的方法是把模版中直接调用的。所以在render过程中来调用计算属性的方法的
     this.value = this.lazy
       ? undefined
       : this.get()
@@ -112,7 +112,7 @@ export default class Watcher {
     let value 
     const vm = this.vm
     try {
-      value = this.getter.call(vm, vm) // getter渲染时候是updateComponent
+      value = this.getter.call(vm, vm) // 如果是渲染watcher，getter渲染时候是updateComponent，如果是用户watcher，那这个就是获取属性的方法
     } catch (e) {
       if (this.user) {
         handleError(e, vm, `getter for watcher "${this.expression}"`)
@@ -205,8 +205,9 @@ export default class Watcher {
         // set new value
         const oldValue = this.value
         this.value = value
-        //判断是否是用户watcher
+        //判断是否是用户watcher，如果是用户watcher需要加上回调函数，如果不是则不需要
         if (this.user) {
+          //当用户watcher的时候，在调用回调函数的时候加上try，catch。this.cb
           try { 
             this.cb.call(this.vm, value, oldValue)
           } catch (e) {
