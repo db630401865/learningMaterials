@@ -15,6 +15,12 @@ import { isFalse, isTrue, isDef, isUndef, isPrimitive } from 'shared/util'
 // normalization is needed - if any child is an Array, we flatten the whole
 // thing with Array.prototype.concat. It is guaranteed to be only 1-level deep
 // because functional components already normalize their own children.
+// 当子组件包含组件时——因为是功能性组件
+// 可以返回一个数组而不是一个根数组。在这种情况下，只是简单的
+// 需要标准化-如果任何子元素是一个数组，我们将整个数组平面化
+// 使用Array.prototype.concat。它保证只有1层深度
+// 因为函数组件已经规范化了它们自己的子组件。
+// 将二维数组转换成一维数组
 export function simpleNormalizeChildren (children: any) {
   for (let i = 0; i < children.length; i++) {
     if (Array.isArray(children[i])) {
@@ -28,10 +34,13 @@ export function simpleNormalizeChildren (children: any) {
 // e.g. <template>, <slot>, v-for, or when the children is provided by user
 // with hand-written render functions / JSX. In such cases a full normalization
 // is needed to cater to all possible types of children values.
+//返回一个一维数组
 export function normalizeChildren (children: any): ?Array<VNode> {
   return isPrimitive(children)
+    //把children转换成文本类型的节点.并且包装成数组的形式
     ? [createTextVNode(children)]
     : Array.isArray(children)
+    //normalizeArrayChildren就是将多位数组转换为一维数组，扁平化
       ? normalizeArrayChildren(children)
       : undefined
 }

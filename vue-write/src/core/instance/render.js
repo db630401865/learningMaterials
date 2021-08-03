@@ -36,6 +36,7 @@ export function initRender (vm: Component) {
   // user-written render functions.
   // 对手写 render 函数进行渲染的方法
   // 是我们手动传入的render函数的时候，我们调用H函数。也就$createElement 
+  // 当用户传入的时候，内部就会调用vm.$createElement
   vm.$createElement = (a, b, c, d) => createElement(vm, a, b, c, d, true)
 
   // $attrs & $listeners are exposed for easier HOC creation.

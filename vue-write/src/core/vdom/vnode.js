@@ -49,7 +49,7 @@ export default class VNode {
     this.fnContext = undefined
     this.fnOptions = undefined
     this.fnScopeId = undefined
-    this.key = data && data.key
+    this.key = data && data.key 
     this.componentOptions = componentOptions
     this.componentInstance = undefined
     this.parent = undefined
@@ -74,7 +74,7 @@ export default class VNode {
 export const createEmptyVNode = (text: string = '') => {
   const node = new VNode()
   node.text = text
-  node.isComment = true
+  node.isComment = true //isComment用来标识当前vnode节点是一个注释节点
   return node
 }
 
