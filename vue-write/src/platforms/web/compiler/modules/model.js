@@ -1,5 +1,5 @@
 /* @flow */
-
+//处理的是和v-if一起使用的v-model
 /**
  * Expand input[v-model] with dyanmic type bindings into v-if-else chains
  * Turn this:

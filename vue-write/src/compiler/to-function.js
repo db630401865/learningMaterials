@@ -11,21 +11,23 @@ type CompiledFunctionResult = {
 
 function createFunction (code, errors) {
   try {
+    //通过new Function(code)将字符串形式的代码转换为函数
     return new Function(code)
   } catch (err) {
     errors.push({ err, code })
     return noop
   }
-}
+} 
 
 export function createCompileToFunctionFn (compile: Function): Function {
-  const cache = Object.create(null)
+  const cache = Object.create(null) //创建一个不带原型的对象，目的是需要通过闭包缓存编译后的结果
 
   return function compileToFunctions (
     template: string,
     options?: CompilerOptions,
     vm?: Component
   ): CompiledFunctionResult {
+    //克隆了一份options，防止污染vue的options
     options = extend({}, options)
     const warn = options.warn || baseWarn
     delete options.warn
@@ -50,18 +52,21 @@ export function createCompileToFunctionFn (compile: Function): Function {
 
     // check cache
     // 1. 读取缓存中的 CompiledFunctionResult 对象，如果有直接返回
+    // key是模版内容作为key
+    // options的delimiters，只有vue完整版才有，在编译的时候使用。作用是改变差值表达式的符号。将{{ }}改成任意符合来处理
     const key = options.delimiters
-      ? String(options.delimiters) + template
+      ? String(ters) + template
       : template
     if (cache[key]) {
       return cache[key]
     }
 
     // compile
-    // 2. 把模板编译为编译对象(render, staticRenderFns)，字符串形式的js代码
+    // 2. 把模板编译为编译对象(render, staticRenderFns)，此时的render是以字符串形式的js代码
     const compiled = compile(template, options)
 
     // check compilation errors/tips
+    // 在编译的时候将错误和技巧打印出来（errors/tips）
     if (process.env.NODE_ENV !== 'production') {
       if (compiled.errors && compiled.errors.length) {
         if (options.outputSourceRange) {
@@ -103,6 +108,7 @@ export function createCompileToFunctionFn (compile: Function): Function {
     // this should only happen if there is a bug in the compiler itself.
     // mostly for codegen development use
     /* istanbul ignore if */
+    // 打印相关错误信息
     if (process.env.NODE_ENV !== 'production') {
       if ((!compiled.errors || !compiled.errors.length) && fnGenErrors.length) {
         warn(

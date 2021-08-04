@@ -30,8 +30,8 @@ export class CodegenState {
     const isReservedTag = options.isReservedTag || no
     this.maybeComponent = (el: ASTElement) => !!el.component || !isReservedTag(el.tag)
     this.onceId = 0
-    this.staticRenderFns = []
-    this.pre = false
+    this.staticRenderFns = [] //用来储存静态跟节点的代码，处理完之后是字符串的代码
+    this.pre = false //当前节点是否使用v-pre标记的
   }
 }
 
@@ -44,19 +44,24 @@ export function generate (
   ast: ASTElement | void,
   options: CompilerOptions
 ): CodegenResult {
+  //new CodegenState(options)代码生成当中状态的对象
   const state = new CodegenState(options)
   const code = ast ? genElement(ast, state) : '_c("div")'
   return {
-    render: `with(this){return ${code}}`,
-    staticRenderFns: state.staticRenderFns
+    render: `with(this){return ${code}}`, //render是对应的AST对象生成的vnode代码的字符串形式
+    staticRenderFns: state.staticRenderFns //生成的静态跟节点对应的函数。
   }
 }
 
 export function genElement (el: ASTElement, state: CodegenState): string {
+  //v-pre标记的节点都是静态节点。包括子节点都是静态的
   if (el.parent) {
     el.pre = el.pre || el.parent.pre
   }
 
+  //处理静态跟节点
+  //el.staticProcessed作用就是为了防止重复处理这个节点
+  //genOnce，genIf，genFor去处理AST对象的Once。For，If指令，把他们转换成render函数中响应的字符串代码
   if (el.staticRoot && !el.staticProcessed) {
     return genStatic(el, state)
   } else if (el.once && !el.onceProcessed) {
@@ -65,11 +70,14 @@ export function genElement (el: ASTElement, state: CodegenState): string {
     return genFor(el, state)
   } else if (el.if && !el.ifProcessed) {
     return genIf(el, state)
+    //如果它不是template就等于它不是静态的，会生成内部的字节以及对应的字符串代码。
+    //如果没有子节点返回void 0就等于undefined
   } else if (el.tag === 'template' && !el.slotTarget && !state.pre) {
     return genChildren(el, state) || 'void 0'
   } else if (el.tag === 'slot') {
     return genSlot(el, state)
   } else {
+    // 处理组件和内置的标签
     // component or element
     let code
     if (el.component) {
@@ -79,9 +87,12 @@ export function genElement (el: ASTElement, state: CodegenState): string {
       if (!el.plain || (el.pre && state.maybeComponent(el))) {
         // 生成元素的属性/指令/事件等
         // 处理各种指令，包括 genDirectives（model/text/html）
+        // 将响应的属性转换为createElement所需要的data对象的字符串形式
+        // data是createElement所需要的第二个参数
         data = genData(el, state)
       }
 
+      //将转换成createElement所需要的第三个参数，数组形式的自己诶单
       const children = el.inlineTemplate ? null : genChildren(el, state, true)
       code = `_c('${el.tag}'${
         data ? `,${data}` : '' // data
@@ -93,13 +104,14 @@ export function genElement (el: ASTElement, state: CodegenState): string {
     for (let i = 0; i < state.transforms.length; i++) {
       code = state.transforms[i](el, code)
     }
+    //把AST对象转换成代码
     return code
   }
 }
 
 // hoist static sub-trees out
 function genStatic (el: ASTElement, state: CodegenState): string {
-  el.staticProcessed = true
+  el.staticProcessed = true //标记当前节点是否被处理了
   // Some elements (templates) need to behave differently inside of a v-pre
   // node.  All pre nodes are static roots, so we can use this as a location to
   // wrap a state change and reset it upon exiting the pre node.
@@ -107,6 +119,7 @@ function genStatic (el: ASTElement, state: CodegenState): string {
   if (el.pre) {
     state.pre = el.pre
   }
+  //将静态根节点的转换生成vnode的对应js代码
   state.staticRenderFns.push(`with(this){return ${genElement(el, state)}}`)
   state.pre = originalPreState
   return `_m(${
@@ -220,6 +233,8 @@ export function genFor (
 }
 
 export function genData (el: ASTElement, state: CodegenState): string {
+  //genData函数此处返回的结果就是creatElement的第二个参数
+
   let data = '{'
 
   // directives first.
@@ -485,10 +500,13 @@ export function genChildren (
         : ``
       return `${(altGenElement || genElement)(el, state)}${normalizationType}`
     }
+    //normalizationType来判断如何去处理数组。是否被拍平。也就是createElemet的第四个参数
     const normalizationType = checkSkip
       ? getNormalizationType(children, state.maybeComponent)
       : 0
-    const gen = altGenNode || genNode
+    const gen = altGenNode || genNode 
+
+    //把数组的每一个AST对象，通过调用genNode生成对应的代码形式，最后把数组的每一项通过数组的join合并,分割的字符串，最后将normalizationType拼接上（如何拍平数组）
     return `[${children.map(c => gen(c, state)).join(',')}]${
       normalizationType ? `,${normalizationType}` : ''
     }`
@@ -527,20 +545,25 @@ function needsNormalization (el: ASTElement): boolean {
 }
 
 function genNode (node: ASTNode, state: CodegenState): string {
-  if (node.type === 1) {
+  //判断AST对象的类型 
+  if (node.type === 1) { //1:标签 ，处理是否是静态
     return genElement(node, state)
   } else if (node.type === 3 && node.isComment) {
+    //处理注释节点
     return genComment(node)
   } else {
+    //处理文本节点
     return genText(node)
   }
 }
 
 export function genText (text: ASTText | ASTExpression): string {
   // _v() --> createTextVNode()
+  //type处理的是表达式
   return `_v(${text.type === 2
     ? text.expression // no need for () because already wrapped in _s()
     // JSON.stringify(text.text) 字符串加上引号 hello -> "hello"
+    //transformSpecialNewlines作用就是将一些特别的换行uncode的形式的就行修正，防止意外情况
     : transformSpecialNewlines(JSON.stringify(text.text))
   })`
 }

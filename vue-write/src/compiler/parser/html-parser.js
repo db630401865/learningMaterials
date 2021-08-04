@@ -14,15 +14,20 @@ import { isNonPhrasingTag } from 'web/compiler/util'
 import { unicodeRegExp } from 'core/util/lang'
 
 // Regular Expressions for parsing tags and attributes
+//匹配标签中的指令和属性
 const attribute = /^\s*([^\s"'<>\/=]+)(?:\s*(=)\s*(?:"([^"]*)"+|'([^']*)'+|([^\s"'=<>`]+)))?/
 const dynamicArgAttribute = /^\s*((?:v-[\w-]+:|@|:|#)\[[^=]+\][^\s"'<>\/=]*)(?:\s*(=)\s*(?:"([^"]*)"+|'([^']*)'+|([^\s"'=<>`]+)))?/
 const ncname = `[a-zA-Z_][\\-\\.0-9_a-zA-Z${unicodeRegExp.source}]*`
 const qnameCapture = `((?:${ncname}\\:)?${ncname})`
+//匹配开始标签
 const startTagOpen = new RegExp(`^<${qnameCapture}`)
 const startTagClose = /^\s*(\/?)>/
+//匹配结束标签
 const endTag = new RegExp(`^<\\/${qnameCapture}[^>]*>`)
+//匹配文档声明
 const doctype = /^<!DOCTYPE [^>]+>/i
 // #7298: escape - to avoid being passed as HTML comment when inlined in page
+//下面2个匹配文档中的注释
 const comment = /^<!\--/
 const conditionalComment = /^<!\[/
 
@@ -58,6 +63,7 @@ export function parseHTML (html, options) {
   const canBeLeftOpenTag = options.canBeLeftOpenTag || no
   let index = 0
   let last, lastTag
+  //html就是模版字符串，将处理完的模版截取掉，继续处理剩余部分
   while (html) {
     last = html
     // Make sure we're not in a plaintext content element like script/style
@@ -65,6 +71,7 @@ export function parseHTML (html, options) {
       let textEnd = html.indexOf('<')
       if (textEnd === 0) {
         // Comment:
+        //将处理完的模版截取掉，继续处理剩余部分
         if (comment.test(html)) {
           const commentEnd = html.indexOf('-->')
 
@@ -72,12 +79,14 @@ export function parseHTML (html, options) {
             if (options.shouldKeepComment) {
               options.comment(html.substring(4, commentEnd), index, index + commentEnd + 3)
             }
+            // 截取为处理完的代码
             advance(commentEnd + 3)
             continue
           }
         }
 
         // http://en.wikipedia.org/wiki/Conditional_comment#Downlevel-revealed_conditional_comment
+        //是否是条件表达式
         if (conditionalComment.test(html)) {
           const conditionalEnd = html.indexOf(']>')
 
@@ -88,6 +97,7 @@ export function parseHTML (html, options) {
         }
 
         // Doctype:
+        //是否是文档声明
         const doctypeMatch = html.match(doctype)
         if (doctypeMatch) {
           advance(doctypeMatch[0].length)
@@ -95,6 +105,7 @@ export function parseHTML (html, options) {
         }
 
         // End tag:
+        // 是否是结束标签
         const endTagMatch = html.match(endTag)
         if (endTagMatch) {
           const curIndex = index
@@ -104,6 +115,7 @@ export function parseHTML (html, options) {
         }
 
         // Start tag:
+        // 是否是开始标签
         const startTagMatch = parseStartTag()
         if (startTagMatch) {
           handleStartTag(startTagMatch)

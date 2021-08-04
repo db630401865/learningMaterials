@@ -41,6 +41,9 @@ export function initMixin (Vue: Class<Component>) {
       // optimize internal component instantiation
       // since dynamic options merging is pretty slow, and none of the
       // internal component options needs special treatment.
+      // 优化内部组件实例化
+      // 因为动态选项合并非常慢，而且没有
+      // 内部组件选项需要特殊处理。
       initInternalComponent(vm, options)
     } else {
       //此处就是将初始化的options和用户传入的options进行合并
@@ -62,6 +65,7 @@ export function initMixin (Vue: Class<Component>) {
     // vm 的生命周期相关变量初始化
     // $children/$parent/$root/$refs
     // 初始化和生命周期相关的属性
+    // 记录组件之间的父子关系
     initLifecycle(vm)
     // vm 的事件监听初始化, 父组件绑定在当前组件上的事件
     //初始化当前组件的事件
@@ -97,10 +101,10 @@ export function initMixin (Vue: Class<Component>) {
 }
 
 export function initInternalComponent (vm: Component, options: InternalComponentOptions) {
-  const opts = vm.$options = Object.create(vm.constructor.options)
+  const opts = vm.$options = Object.create(vm.constructor.options) //基于vue实例的options，创建新的的options
   // doing this because it's faster than dynamic enumeration.
   const parentVnode = options._parentVnode
-  opts.parent = options.parent
+  opts.parent = options.parent //当前子组件的父组件
   opts._parentVnode = parentVnode
 
   const vnodeComponentOptions = parentVnode.componentOptions

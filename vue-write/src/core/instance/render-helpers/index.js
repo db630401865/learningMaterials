@@ -21,11 +21,11 @@ export function installRenderHelpers (target: any) {
   target._t = renderSlot
   target._q = looseEqual
   target._i = looseIndexOf
-  target._m = renderStatic
+  target._m = renderStatic //处理静态内容的
   target._f = resolveFilter
   target._k = checkKeyCodes
   target._b = bindObjectProps
-  //创建了文本的虚拟节点
+  //创建了文本vnode的虚拟节点
   target._v = createTextVNode
   target._e = createEmptyVNode
   target._u = resolveScopedSlots

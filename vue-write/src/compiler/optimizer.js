@@ -18,7 +18,19 @@ const genStaticKeysCached = cached(genStaticKeys)
  *    create fresh nodes for them on each re-render;
  * 2. Completely skip them in the patching process.
  */
+//  ／**
+//  *优化器的目标:遍历生成的模板AST树
+//  *和检测纯静态的子树，如部分（例如div中的纯文本内容，他永远不会变化）
+//  永远不需要改变的DOM。
+//  ＊
+//  *一旦我们检测到这些子树，我们可以:
+//  ＊
+//  * 1。把它们变成常数，这样我们就不需要再这样做了
+//  *在每个重渲染上为它们创建新鲜的节点;
+//  * 2。在打补丁的过程中完全跳过它们。
+//  ＊／
 export function optimize (root: ?ASTElement, options: CompilerOptions) {
+  //root判断是否传入ast对象
   if (!root) return
   isStaticKey = genStaticKeysCached(options.staticKeys || '')
   isPlatformReservedTag = options.isReservedTag || no
@@ -27,6 +39,7 @@ export function optimize (root: ?ASTElement, options: CompilerOptions) {
   markStatic(root)
   // second pass: mark static roots.
   // 标记静态根节点
+  // 跟节点指的是，标签当中包含子标签并且没有动态内容（就是里面都是纯文本内容）。如果都是纯文本内容没有子标签，vue不会对它做优化的
   markStaticRoots(root, false)
 }
 
@@ -38,14 +51,19 @@ function genStaticKeys (keys: string): Function {
 }
 
 function markStatic (node: ASTNode) {
-  // 判断当前 astNode 是否是静态的
+  // 判断当前 astNode 是否是静态的节点
   node.static = isStatic(node)
   // 元素节点
   if (node.type === 1) {
+    // 处理元素中的子节点
     // do not make component slot content static. this avoids
     // 1. components not able to mutate slot nodes
     // 2. static slot content fails for hot-reloading
+    // 不使组件槽位内容为静态的这就避免了
+    // 1。组件无法改变槽位节点
+    // 2。静态槽位内容热加载失败
     // 是组件，不是slot，没有inline-template
+    //判断是否是保留标签isPlatformReservedTag(node.tag)。目的是判断当前是否是组件，如果是组件它不会把slot标记成静态节点
     if (
       !isPlatformReservedTag(node.tag) &&
       node.tag !== 'slot' &&
@@ -53,7 +71,7 @@ function markStatic (node: ASTNode) {
     ) {
       return
     }
-    // 遍历 children
+    // 遍历AST下的所有的子节点children。递归去调用
     for (let i = 0, l = node.children.length; i < l; i++) {
       const child = node.children[i]
       // 标记静态
@@ -63,6 +81,7 @@ function markStatic (node: ASTNode) {
         node.static = false
       }
     }
+    //处理条件中的AST对象。和上一步一样的，标记静态节点的过程
     if (node.ifConditions) {
       for (let i = 1, l = node.ifConditions.length; i < l; i++) {
         const block = node.ifConditions[i].block
@@ -75,7 +94,7 @@ function markStatic (node: ASTNode) {
   }
 }
 
-function markStaticRoots (node: ASTNode, isInFor: boolean) {
+function  markStaticRoots (node: ASTNode, isInFor: boolean) {
   if (node.type === 1) {
     if (node.static || node.once) {
       node.staticInFor = isInFor
@@ -113,9 +132,11 @@ function isStatic (node: ASTNode): boolean {
   if (node.type === 2) { // expression
     return false
   }
+  // 静态文本内容
   if (node.type === 3) { // text
     return true
   }
+  //如果以下都是没问题返回true
   return !!(node.pre || (   // pre
     !node.hasBindings && // no dynamic bindings
     !node.if && !node.for && // not v-if or v-for or v-else

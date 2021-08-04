@@ -65,8 +65,8 @@ export function createASTElement (
   return {
     type: 1,
     tag,
-    attrsList: attrs,
-    attrsMap: makeAttrsMap(attrs),
+    attrsList: attrs, //标签属性数组
+    attrsMap: makeAttrsMap(attrs), //把这个数组转换为对象的形式
     rawAttrsMap: {},
     parent,
     children: []
@@ -203,6 +203,7 @@ export function parse (
   }
 
   // 2. 对模板解析
+  // parseHTML这个函数解析htmlm模版的
   parseHTML(template, {
     warn,
     expectHTML: options.expectHTML,
@@ -213,6 +214,7 @@ export function parse (
     shouldKeepComment: options.comments,
     outputSourceRange: options.outputSourceRange,
     // 解析过程中的回调函数，生成 AST
+    // 解析到开始标签开始调用的
     start (tag, attrs, unary, start, end) {
       // check namespace.
       // inherit parent ns if there is one
@@ -224,6 +226,7 @@ export function parse (
         attrs = guardIESVGBug(attrs)
       }
 
+      //创建AST对象 
       let element: ASTElement = createASTElement(tag, attrs, currentParent)
       if (ns) {
         element.ns = ns
@@ -267,6 +270,7 @@ export function parse (
         element = preTransforms[i](element, options) || element
       }
 
+      //开始去处理指令v-pre
       if (!inVPre) {
         processPre(element)
         if (element.pre) {
@@ -282,6 +286,7 @@ export function parse (
         // structural directives
         // 结构化的指令
         // v-for
+        // 这里处理v-for,v-if,v-once
         processFor(element)
         processIf(element)
         processOnce(element)
@@ -401,7 +406,7 @@ export function parse (
       }
     }
   })
-  return root
+  return root //root就是AST解析好的变量
 }
 
 function processPre (el) {
@@ -535,7 +540,8 @@ export function parseFor (exp: string): ?ForParseResult {
 function processIf (el) {
   const exp = getAndRemoveAttr(el, 'v-if')
   if (exp) {
-    el.if = exp
+    el.if = exp //存储到el.if中，也就是ast对象的if属性上
+    //addIfCondition函数作用就是把if中的表达式,和对应的ast对象储存到ifConditions数组中
     addIfCondition(el, {
       exp: exp,
       block: el

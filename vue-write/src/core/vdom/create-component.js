@@ -48,6 +48,7 @@ const componentVNodeHooks = {
         vnode,
         activeInstance
       )
+      //child.$mount创建完组件之后调用
       child.$mount(hydrating ? vnode.elm : undefined, hydrating)
     }
   },
@@ -96,12 +97,13 @@ const componentVNodeHooks = {
   }
 }
 
+//componentVNodeHooks定义了4个钩子函数的键
 const hooksToMerge = Object.keys(componentVNodeHooks)
 
 export function createComponent (
   Ctor: Class<Component> | Function | Object | void,
   data: ?VNodeData,
-  context: Component,
+  context: Component, //vue实例或则会当前组件的实例
   children: ?Array<VNode>,
   tag?: string
 ): VNode | Array<VNode> | void {
@@ -109,14 +111,14 @@ export function createComponent (
     return
   }
 
-  const baseCtor = context.$options._base
+  const baseCtor = context.$options._base //vue的构造函数
 
   // plain options object: turn it into a constructor
   // 如果 Ctor 不是一个构造函数，是一个对象
   // 使用 Vue.extend() 创造一个子组件的构造函数
   // render: h => h(App)  这种情况会进入
   if (isObject(Ctor)) {
-    Ctor = baseCtor.extend(Ctor)
+    Ctor = baseCtor.extend(Ctor) //如果有选项对象Ctor，那么就将选项对象转换成构造函数
   }
 
   // if at this stage it's not a constructor or an async component factory,
@@ -131,6 +133,7 @@ export function createComponent (
   // async component
   let asyncFactory
   if (isUndef(Ctor.cid)) {
+    //如果Ctor中没有.cid就认为是异步组件
     asyncFactory = Ctor
     Ctor = resolveAsyncComponent(asyncFactory, baseCtor)
     if (Ctor === undefined) {
@@ -151,6 +154,9 @@ export function createComponent (
 
   // resolve constructor options in case global mixins are applied after
   // component constructor creation
+  //解析构造函数选项，以防之后应用全局mixin
+  //创建组件构造函数
+  //当组件构造函数创建完毕后，合并当前组件选项，和通过vue.mixin混入的选项
   resolveConstructorOptions(Ctor)
 
   // transform component v-model data into props & events
@@ -199,6 +205,7 @@ export function createComponent (
   const vnode = new VNode(
     `vue-component-${Ctor.cid}${name ? `-${name}` : ''}`,
     data, undefined, undefined, undefined, context,
+    //Ctor在init钩子函数内部通过new vnode.componentOptions.Ctor(options)来创建的组件的对象
     { Ctor, propsData, listeners, tag, children },
     asyncFactory
   )
@@ -206,11 +213,11 @@ export function createComponent (
   // Weex specific: invoke recycle-list optimized @render function for
   // extracting cell-slot template.
   // https://github.com/Hanks10100/weex-native-directive/tree/master/component
-  /* istanbul ignore if */
+  /* ista nbul ignore if */
   if (__WEEX__ && isRecyclableComponent(vnode)) {
     return renderRecyclableComponentTemplate(vnode)
   }
-
+  //把组件转换为vnode对象，初始化了4个钩子函数，在init钩子函数中组件了对象
   return vnode
 }
 
@@ -236,13 +243,14 @@ export function createComponentInstanceForVnode (
 }
 
 function installComponentHooks (data: VNodeData) {
-  const hooks = data.hook || (data.hook = {})
+  const hooks = data.hook || (data.hook = {}) //用户传入的组件钩子函数
   // 用户可以传递自定义钩子函数
   // 把用户传入的自定义钩子函数和 componentVNodeHooks 中预定义的钩子函数合并
   for (let i = 0; i < hooksToMerge.length; i++) {
     const key = hooksToMerge[i]
     const existing = hooks[key]
     const toMerge = componentVNodeHooks[key]
+    //合并钩子函数（用户的和vue的）
     if (existing !== toMerge && !(existing && existing._merged)) {
       hooks[key] = existing ? mergeHook(toMerge, existing) : toMerge
     }
